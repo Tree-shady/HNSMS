@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fa fa-desktop"></i> 设备管理
+</h1>
+
+<div class="row mb-3">
+    <div class="col">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="搜索设备..." id="device-search">
+            <button class="btn btn-primary" type="button" id="search-btn">
+                <i class="fa fa-search"></i> 搜索
+            </button>
+        </div>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-success" type="button" id="refresh-devices">
+            <i class="fa fa-refresh"></i> 刷新设备列表
+        </button>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title">设备列表</h5>
+        <div class="small" id="device-count">共 0 个设备</div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover" id="devices-table">
+                <thead>
+                    <tr>
+                        <th>设备名称</th>
+                        <th>IP地址</th>
+                        <th>MAC地址</th>
+                        <th>设备类型</th>
+                        <th>厂商</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="devices-list">
+                    <tr>
+                        <td colspan="7" class="text-center">
+                            <i class="fa fa-spinner fa-spin"></i> 加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="text-end">
+            <button class="btn btn-sm btn-danger" type="button" id="isolate-selected">
+                <i class="fa fa-lock"></i> 隔离选中设备
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 设备详情模态框 -->
+<div class="modal fade" id="device-detail-modal" tabindex="-1" aria-labelledby="device-detail-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="device-detail-modal-label">设备详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="device-detail-content">
+                <!-- 设备详情将通过JavaScript动态加载 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-danger" id="isolate-device-btn">隔离设备</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 页面加载完成后执行
+    $(document).ready(function() {
+        // 加载设备列表
+        loadDevices();
+        
+        // 绑定事件
+        $('#refresh-devices').click(loadDevices);
+        $('#search-btn').click(searchDevices);
+        $('#device-search').keypress(function(e) {
+            if (e.which === 13) {
+                searchDevices();
+            }
+        });
+        
+        // 模态框关闭事件
+        $('#device-detail-modal').on('hidden.bs.modal', function() {
+            $('#device-detail-content').empty();
+        });
+    });
+    
+    // 加载设备列表
+    function loadDevices() {
+        $.getJSON('/api/devices', function(data) {
+            if (data.success) {
+                const devices = data.data.devices;
+                const tbody = $('#devices-list');
+                
+                tbody.empty();
+                $('#device-count').text(`共 ${devices.length} 个设备`);
+                
+                if (devices.length === 0) {
+                    tbody.append('<tr><td colspan="7" class="text-center">暂无设备</td></tr>');
+                    return;
+                }
+                
+                devices.forEach(device => {
+                    const statusClass = {
+                        'online': 'badge bg-success',
+                        'offline': 'badge bg-danger',
+                        'isolated': 'badge bg-warning'
+                    }[device.status] || 'badge bg-secondary';
+                    
+                    const hostname = device.hostname || '未知设备';
+                    
+                    tbody.append(`
+                        <tr data-mac="${device.mac_address}">
+                            <td>${hostname}</td>
+                            <td>${device.ip_address}</td>
+                            <td>${device.mac_address}</td>
+                            <td>${device.device_type}</td>
+                            <td>${device.manufacturer}</td>
+                            <td><span class="${statusClass}">${device.status}</span></td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-info view-device" data-mac="${device.mac_address}">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger isolate-device" data-mac="${device.mac_address}">
+                                        <i class="fa fa-lock"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+                });
+                
+                // 绑定查看设备详情事件
+                $('.view-device').click(function() {
+                    const macAddress = $(this).data('mac');
+                    loadDeviceDetail(macAddress);
+                });
+                
+                // 绑定隔离设备事件
+                $('.isolate-device').click(function() {
+                    const macAddress = $(this).data('mac');
+                    isolateDevice(macAddress);
+                });
+            }
+        });
+    }
+    
+    // 搜索设备
+    function searchDevices() {
+        const keyword = $('#device-search').val().toLowerCase();
+        const rows = $('#devices-table tbody tr');
+        
+        rows.each(function() {
+            const text = $(this).text().toLowerCase();
+            $(this).toggle(text.includes(keyword));
+        });
+    }
+    
+    // 加载设备详情
+    function loadDeviceDetail(macAddress) {
+        $.getJSON(`/api/devices/${macAddress}`, function(data) {
+            if (data.success) {
+                const device = data.data;
+                const content = $('#device-detail-content');
+                
+                const firstSeen = new Date(device.first_seen * 1000).toLocaleString();
+                const lastSeen = new Date(device.last_seen * 1000).toLocaleString();
+                
+                content.html(`
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>基本信息</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>设备名称</td>
+                                        <td>${device.hostname || '未知设备'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>IP地址</td>
+                                        <td>${device.ip_address}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>MAC地址</td>
+                                        <td>${device.mac_address}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>设备类型</td>
+                                        <td>${device.device_type}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>厂商</td>
+                                        <td>${device.manufacturer}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>型号</td>
+                                        <td>${device.model}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>操作系统</td>
+                                        <td>${device.os}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>状态信息</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>状态</td>
+                                        <td>
+                                        <span class="badge bg-${(
+                                            {
+                                                'online': 'success',
+                                                'offline': 'danger',
+                                                'isolated': 'warning'
+                                            }[device.status] || 'secondary'
+                                        )}">
+                                            ${device.status}
+                                        </span>
+                                    </td>
+                                    </tr>
+                                    <tr>
+                                        <td>首次发现</td>
+                                        <td>${firstSeen}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>最后在线</td>
+                                        <td>${lastSeen}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>所属分组</td>
+                                        <td>${device.groups.join(', ') || '无'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col">
+                            <h6>流量统计</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>入站流量</td>
+                                        <td>${(device.traffic_stats.bytes_in / (1024 * 1024)).toFixed(2)} MB</td>
+                                    </tr>
+                                    <tr>
+                                        <td>出站流量</td>
+                                        <td>${(device.traffic_stats.bytes_out / (1024 * 1024)).toFixed(2)} MB</td>
+                                    </tr>
+                                    <tr>
+                                        <td>总流量</td>
+                                        <td>${((device.traffic_stats.bytes_in + device.traffic_stats.bytes_out) / (1024 * 1024)).toFixed(2)} MB</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `);
+                
+                // 显示模态框
+                const modal = new bootstrap.Modal('#device-detail-modal');
+                modal.show();
+                
+                // 绑定隔离设备按钮事件
+                $('#isolate-device-btn').off('click').click(function() {
+                    isolateDevice(macAddress);
+                    const modal = bootstrap.Modal.getInstance('#device-detail-modal');
+                    modal.hide();
+                });
+            }
+        });
+    }
+    
+    // 隔离设备
+    function isolateDevice(macAddress) {
+        if (confirm('确定要隔离该设备吗？')) {
+            $.ajax({
+                url: `/api/devices/${macAddress}/isolate`,
+                type: 'POST',
+                success: function(data) {
+                    if (data.success) {
+                        alert(data.message);
+                        loadDevices();
+                    } else {
+                        alert('隔离设备失败: ' + data.error);
+                    }
+                },
+                error: function() {
+                    alert('隔离设备失败，请检查网络连接');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

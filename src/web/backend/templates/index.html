@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">欢迎使用 <i class="fa fa-shield text-danger"></i> Warefire</h1>
+    <p class="lead">基于主动态势感知的家庭网络安全监控系统</p>
+    <hr class="my-4">
+    <p>系统采用多层次威胁检测机制，结合签名检测、异常行为分析和威胁情报集成，实现全方位的家庭网络安全防护。</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('dashboard') }}" role="button">
+        <i class="fa fa-dashboard"></i> 进入仪表盘
+    </a>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-desktop"></i> 设备管理
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">自动发现和识别网络设备，建立设备画像，支持设备分组和策略管理。</p>
+                <a href="{{ url_for('devices_page') }}" class="btn btn-light">
+                    查看设备
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-bell"></i> 告警中心
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">实时监控系统安全状态，生成和管理告警，支持告警的确认、解决和关闭。</p>
+                <a href="{{ url_for('alerts_page') }}" class="btn btn-light">
+                    查看告警
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-bar-chart"></i> 流量监控
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">捕获和分析网络流量，监控异常流量，查看流量统计和会话信息。</p>
+                <a href="{{ url_for('traffic_page') }}" class="btn btn-light">
+                    查看流量
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fa fa-cog"></i> 系统设置
+</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">系统配置</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="system-mode" class="form-label">系统模式</label>
+                        <select class="form-select" id="system-mode">
+                            <option value="learning">学习模式</option>
+                            <option value="detection">检测模式</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="scan-interval" class="form-label">设备扫描间隔 (秒)</label>
+                        <input type="number" class="form-control" id="scan-interval" value="300">
+                    </div>
+                    <div class="mb-3">
+                        <label for="log-level" class="form-label">日志级别</label>
+                        <select class="form-select" id="log-level">
+                            <option value="DEBUG">DEBUG</option>
+                            <option value="INFO" selected>INFO</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="ERROR">ERROR</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="unknown-device-alert">
+                        <label class="form-check-label" for="unknown-device-alert">未知设备告警</label>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="auto-isolate">
+                        <label class="form-check-label" for="auto-isolate">自动隔离可疑设备</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">保存设置</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">网络配置</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="network-interface" class="form-label">监控网络接口</label>
+                        <select class="form-select" id="network-interface">
+                            <option value="all">所有接口</option>
+                            <option value="eth0">以太网</option>
+                            <option value="wlan0">无线网络</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ip-range" class="form-label">监控IP范围</label>
+                        <input type="text" class="form-control" id="ip-range" value="192.168.0.0/24">
+                    </div>
+                    <div class="mb-3">
+                        <label for="alert-threshold" class="form-label">告警阈值 (数据包/秒)</label>
+                        <input type="number" class="form-control" id="alert-threshold" value="1000">
+                    </div>
+                    <button type="submit" class="btn btn-primary">保存设置</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 页面加载完成后执行
+    $(document).ready(function() {
+        // 绑定表单提交事件
+        $('form').submit(function(e) {
+            e.preventDefault();
+            alert('设置已保存');
+        });
+    });
+</script>
+{% endblock %}

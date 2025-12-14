@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fa fa-info-circle"></i> 关于系统
+</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">系统信息</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>系统名称</td>
+                            <td>家庭网络安全监控系统</td>
+                        </tr>
+                        <tr>
+                            <td>系统版本</td>
+                            <td>1.0.0</td>
+                        </tr>
+                        <tr>
+                            <td>开发语言</td>
+                            <td>Python 3.12</td>
+                        </tr>
+                        <tr>
+                            <td>框架</td>
+                            <td>Flask</td>
+                        </tr>
+                        <tr>
+                            <td>数据库</td>
+                            <td>SQLite</td>
+                        </tr>
+                        <tr>
+                            <td>开发日期</td>
+                            <td>2025-12-01</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">功能特性</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 自动设备发现和识别
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 实时流量监控和分析
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 威胁检测和告警
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 设备行为基线分析
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 设备隔离和控制
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 威胁情报更新
+                    </li>
+                    <li class="list-group-item">
+                        <i class="fa fa-check-circle text-success"></i> 响应式Web管理界面
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">许可证信息</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-0">
+            <strong>开源协议:</strong> MIT License
+        </p>
+        <p class="mb-0">
+            <strong>版权所有:</strong> © 2025 家庭网络安全监控系统 - Warefire
+        </p>
+        <p class="mt-2">
+            本系统是一款开源的家庭网络安全监控系统，用于保护家庭网络安全，防止网络攻击和恶意设备接入。
+        </p>
+    </div>
+</div>
+{% endblock %}

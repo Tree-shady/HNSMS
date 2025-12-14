@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fa fa-bar-chart"></i> 流量监控
+</h1>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="btn-group">
+            <button class="btn btn-primary" type="button" id="refresh-traffic">
+                <i class="fa fa-refresh"></i> 刷新流量数据
+            </button>
+            <button class="btn btn-secondary" type="button" id="clear-traffic">
+                <i class="fa fa-trash"></i> 清除统计
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="input-group float-end">
+            <select class="form-select" id="time-range">
+                <option value="1h">过去1小时</option>
+                <option value="24h">过去24小时</option>
+                <option value="7d">过去7天</option>
+                <option value="30d">过去30天</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- 流量统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fa fa-download"></i> 入站流量
+                </h5>
+                <div class="mt-3">
+                    <div class="fs-1" id="inbound-traffic">0 MB</div>
+                    <div class="small mt-1">数据包数: <span id="inbound-packets">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fa fa-upload"></i> 出站流量
+                </h5>
+                <div class="mt-3">
+                    <div class="fs-1" id="outbound-traffic">0 MB</div>
+                    <div class="small mt-1">数据包数: <span id="outbound-packets">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fa fa-exchange"></i> 总流量
+                </h5>
+                <div class="mt-3">
+                    <div class="fs-1" id="total-traffic">0 MB</div>
+                    <div class="small mt-1">活跃会话: <span id="active-sessions">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fa fa-line-chart"></i> 流量速率
+                </h5>
+                <div class="mt-3">
+                    <div class="fs-1" id="traffic-rate">0 Mbps</div>
+                    <div class="small mt-1">每秒数据包: <span id="packets-per-second">0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 流量图表和会话列表 -->
+<div class="row">
+    <!-- 流量图表 -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-area-chart"></i> 流量趋势
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="traffic-chart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 活跃会话列表 -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-list"></i> 活跃会话
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>源IP</th>
+                                <th>目标IP</th>
+                                <th>协议</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessions-list">
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <i class="fa fa-spinner fa-spin"></i> 加载中...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end mt-2">
+                    <button class="btn btn-sm btn-primary" type="button" id="view-all-sessions">
+                        查看所有会话
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 协议分布卡片 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-pie-chart"></i> 协议分布
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="protocol-chart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 流量排名卡片 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-trophy"></i> 流量排名 - 源IP
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>IP地址</th>
+                                <th>流量</th>
+                                <th>数据包数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-src-ips">
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <i class="fa fa-spinner fa-spin"></i> 加载中...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fa fa-trophy"></i> 流量排名 - 目标IP
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>IP地址</th>
+                                <th>流量</th>
+                                <th>数据包数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-dest-ips">
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <i class="fa fa-spinner fa-spin"></i> 加载中...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 页面加载完成后执行
+    $(document).ready(function() {
+        // 加载流量数据
+        loadTrafficData();
+        // 加载活跃会话
+        loadActiveSessions();
+        // 初始化图表
+        initCharts();
+        
+        // 绑定事件
+        $('#refresh-traffic').click(function() {
+            loadTrafficData();
+            loadActiveSessions();
+        });
+        
+        // 每30秒自动刷新数据
+        setInterval(function() {
+            loadTrafficData();
+            loadActiveSessions();
+        }, 30000);
+    });
+    
+    // 加载流量数据
+    function loadTrafficData() {
+        $.getJSON('/api/traffic/stats', function(data) {
+            if (data.success) {
+                const stats = data.data;
+                
+                // 更新流量统计
+                const totalBytes = stats.total_bytes || 0;
+                const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+                $('#total-traffic').text(totalMB + ' MB');
+                
+                // 假设流量统计中没有区分入站和出站，这里使用总流量的一半作为示例
+                const inboundMB = (totalBytes / 2 / (1024 * 1024)).toFixed(2);
+                const outboundMB = (totalBytes / 2 / (1024 * 1024)).toFixed(2);
+                
+                $('#inbound-traffic').text(inboundMB + ' MB');
+                $('#outbound-traffic').text(outboundMB + ' MB');
+                
+                // 更新数据包统计
+                const totalPackets = stats.total_packets || 0;
+                $('#inbound-packets').text(totalPackets / 2);
+                $('#outbound-packets').text(totalPackets / 2);
+            }
+        });
+    }
+    
+    // 加载活跃会话
+    function loadActiveSessions() {
+        $.getJSON('/api/traffic/sessions', function(data) {
+            if (data.success) {
+                const sessions = data.data.sessions.slice(0, 10); // 只显示最近10个
+                const tbody = $('#sessions-list');
+                
+                tbody.empty();
+                $('#active-sessions').text(data.data.total);
+                
+                if (sessions.length === 0) {
+                    tbody.append('<tr><td colspan="4" class="text-center">暂无活跃会话</td></tr>');
+                    return;
+                }
+                
+                sessions.forEach(session => {
+                    tbody.append(`
+                        <tr>
+                            <td>${session.ip_src}</td>
+                            <td>${session.ip_dst}</td>
+                            <td>${session.protocol}</td>
+                            <td>${session.state}</td>
+                        </tr>
+                    `);
+                });
+            }
+        });
+    }
+    
+    // 初始化图表
+    function initCharts() {
+        // 流量趋势图
+        const trafficCtx = document.getElementById('traffic-chart').getContext('2d');
+        new Chart(trafficCtx, {
+            type: 'line',
+            data: {
+                labels: ['1h', '2h', '3h', '4h', '5h', '6h'],
+                datasets: [{
+                    label: '入站流量 (MB)',
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 2,
+                    fill: true
+                }, {
+                    label: '出站流量 (MB)',
+                    data: [7, 11, 5, 8, 3, 7],
+                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // 协议分布饼图
+        const protocolCtx = document.getElementById('protocol-chart').getContext('2d');
+        new Chart(protocolCtx, {
+            type: 'pie',
+            data: {
+                labels: ['TCP', 'UDP', 'ICMP', '其他'],
+                datasets: [{
+                    data: [65, 25, 7, 3],
+                    backgroundColor: [
+                        '#007bff',
+                        '#28a745',
+                        '#ffc107',
+                        '#6c757d'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+</script>
+{% endblock %}
