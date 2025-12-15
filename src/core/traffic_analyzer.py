@@ -169,10 +169,20 @@ class TrafficAnalyzer:
         self.traffic_stats = {
             "total_packets": 0,
             "total_bytes": 0,
+            "inbound_packets": 0,
+            "inbound_bytes": 0,
+            "outbound_packets": 0,
+            "outbound_bytes": 0,
             "protocol_distribution": {},
             "top_talkers": {},
-            "top_destinations": {}
+            "top_destinations": {},
+            "traffic_rate": 0,  # 字节/秒
+            "packets_per_second": 0
         }
+        
+        # 用于计算速率的历史数据
+        self._rate_history = []  # (timestamp, bytes) 列表
+        self._rate_window = 5  # 速率计算窗口（秒）
         
         # 在Windows系统上，使用更通用的接口列表
         if sys.platform == "win32":
@@ -190,6 +200,9 @@ class TrafficAnalyzer:
             return
         
         logger.info("Starting traffic analyzer...")
+        
+        # 先设置运行标志，确保线程能正常执行
+        self.is_running = True
         
         # 在Windows系统上或Scapy不可用时，使用模拟数据生成
         if sys.platform == "win32" or not SCAPY_AVAILABLE:
@@ -220,7 +233,6 @@ class TrafficAnalyzer:
             self.cleanup_thread = threading.Thread(target=self._cleanup_sessions, daemon=True)
             self.cleanup_thread.start()
         
-        self.is_running = True
         logger.info("Traffic analyzer started successfully")
     
     def stop(self) -> None:
@@ -404,8 +416,29 @@ class TrafficAnalyzer:
         Args:
             packet: 数据包对象
         """
+        current_time = get_current_timestamp()
+        
+        # 更新总流量统计
         self.traffic_stats["total_packets"] += 1
         self.traffic_stats["total_bytes"] += packet.packet_size
+        
+        # 简单区分入站和出站流量（实际应用中需要根据网络拓扑区分）
+        # 这里假设本地网络是192.168.0.0/24网段
+        is_inbound = not packet.ip_src.startswith("192.168.0.") and packet.ip_dst.startswith("192.168.0.")
+        is_outbound = packet.ip_src.startswith("192.168.0.") and not packet.ip_dst.startswith("192.168.0.")
+        
+        if is_inbound:
+            self.traffic_stats["inbound_packets"] += 1
+            self.traffic_stats["inbound_bytes"] += packet.packet_size
+        elif is_outbound:
+            self.traffic_stats["outbound_packets"] += 1
+            self.traffic_stats["outbound_bytes"] += packet.packet_size
+        else:
+            # 同一网段内的流量，平均分配到入站和出站
+            self.traffic_stats["inbound_packets"] += 0.5
+            self.traffic_stats["inbound_bytes"] += packet.packet_size / 2
+            self.traffic_stats["outbound_packets"] += 0.5
+            self.traffic_stats["outbound_bytes"] += packet.packet_size / 2
         
         # 更新协议分布
         if packet.protocol not in self.traffic_stats["protocol_distribution"]:
@@ -422,6 +455,37 @@ class TrafficAnalyzer:
         if packet.ip_dst not in self.traffic_stats["top_destinations"]:
             self.traffic_stats["top_destinations"][packet.ip_dst] = 0
         self.traffic_stats["top_destinations"][packet.ip_dst] += packet.packet_size
+        
+        # 更新速率历史
+        self._rate_history.append((current_time, packet.packet_size))
+        
+        # 计算流量速率
+        self._calculate_rate()
+    
+    def _calculate_rate(self) -> None:
+        """计算流量速率"""
+        current_time = get_current_timestamp()
+        
+        # 清理旧数据
+        cutoff_time = current_time - self._rate_window
+        self._rate_history = [entry for entry in self._rate_history if entry[0] >= cutoff_time]
+        
+        if not self._rate_history:
+            # 没有数据时重置速率
+            self.traffic_stats["traffic_rate"] = 0
+            self.traffic_stats["packets_per_second"] = 0
+            return
+        
+        # 计算总字节数和数据包数
+        total_bytes = sum(entry[1] for entry in self._rate_history)
+        total_packets = len(self._rate_history)
+        
+        # 计算持续时间
+        duration = current_time - self._rate_history[0][0] or 1  # 避免除以0
+        
+        # 计算速率
+        self.traffic_stats["traffic_rate"] = total_bytes / duration
+        self.traffic_stats["packets_per_second"] = total_packets / duration
     
     def _manage_flow_session(self, packet: TrafficPacket) -> None:
         """管理流量会话
@@ -563,21 +627,61 @@ class TrafficAnalyzer:
         logger.info("Starting mock data generation...")
         
         protocols = ["TCP", "UDP", "ICMP", "ARP"]
-        ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3", "192.168.0.4", "8.8.8.8", "114.114.114.114"]
-        macs = ["00:00:00:00:00:01", "00:00:00:00:00:02", "00:00:00:00:00:03", "00:00:00:00:00:04"]
+        
+        # 扩展IP列表，包含更多真实外部IP和常见网站IP
+        internal_ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3", "192.168.0.4", "192.168.0.5"]
+        external_ips = [
+            # 常见DNS服务器
+            "8.8.8.8", "8.8.4.4", "114.114.114.114", "223.5.5.5",
+            # GitHub IP地址
+            "140.82.113.3", "140.82.114.3", "140.82.114.4", "140.82.112.4",
+            # 其他常见网站IP
+            "104.244.42.129",  # Twitter
+            "157.240.1.35",    # Facebook
+            "93.184.216.34",    # Wikipedia
+            "208.67.222.222",   # OpenDNS
+            "1.1.1.1",          # Cloudflare
+            "209.85.220.138",   # Google
+            "52.217.0.25",      # AWS
+            "51.103.5.138",     # Azure
+            "185.199.108.153",  # GitHub
+            "185.199.109.153",  # GitHub
+            "185.199.110.153",  # GitHub
+            "185.199.111.153"   # GitHub
+        ]
+        
+        # 合并所有IP
+        ips = internal_ips + external_ips
+        macs = ["00:00:00:00:00:01", "00:00:00:00:00:02", "00:00:00:00:00:03", "00:00:00:00:00:04", "00:00:00:00:00:05"]
         
         import time
+        import random
+        
         while self.is_running:
             try:
                 # 创建模拟数据包
                 packet = TrafficPacket()
                 packet.timestamp = get_current_timestamp()
-                packet.mac_src = macs[get_current_timestamp() % len(macs)]
-                packet.mac_dst = macs[(get_current_timestamp() + 1) % len(macs)]
-                packet.ip_src = ips[get_current_timestamp() % len(ips)]
-                packet.ip_dst = ips[(get_current_timestamp() + 2) % len(ips)]
-                packet.protocol = protocols[get_current_timestamp() % len(protocols)]
-                packet.packet_size = 64 + (get_current_timestamp() % 1000)
+                
+                # 使用随机选择，使模拟数据更真实
+                packet.mac_src = random.choice(macs)
+                packet.mac_dst = random.choice(macs)
+                
+                # 70%的概率是内部到外部的流量，30%是内部到内部的流量
+                if random.random() < 0.7:
+                    # 内部到外部
+                    packet.ip_src = random.choice(internal_ips)
+                    packet.ip_dst = random.choice(external_ips)
+                else:
+                    # 内部到内部
+                    packet.ip_src = random.choice(internal_ips)
+                    packet.ip_dst = random.choice(internal_ips)
+                    # 确保源IP和目标IP不同
+                    while packet.ip_src == packet.ip_dst:
+                        packet.ip_dst = random.choice(internal_ips)
+                
+                packet.protocol = random.choice(protocols)
+                packet.packet_size = 64 + random.randint(0, 1000)
                 
                 # 放入队列进行分析
                 self.packet_queue.put(packet, block=False)

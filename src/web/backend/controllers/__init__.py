@@ -8,7 +8,7 @@
 from .status_controller import get_status
 from .device_controller import get_devices, get_device, isolate_device, release_device
 from .alert_controller import get_alerts, acknowledge_alert, resolve_alert, close_alert
-from .traffic_controller import get_traffic_stats, get_active_sessions
+from .traffic_controller import get_traffic_stats, get_active_sessions, get_top_talkers, get_protocol_distribution
 
 __all__ = [
     'get_status',
@@ -21,5 +21,7 @@ __all__ = [
     'resolve_alert',
     'close_alert',
     'get_traffic_stats',
-    'get_active_sessions'
+    'get_active_sessions',
+    'get_top_talkers',
+    'get_protocol_distribution'
 ]

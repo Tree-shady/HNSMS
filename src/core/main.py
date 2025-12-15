@@ -37,6 +37,13 @@ class WarefireSystem:
         Args:
             config_path: 配置文件路径
         """
+        # 加载配置，优先使用提供的配置路径，否则尝试加载保存的配置
+        if not config_path:
+            import os
+            saved_config_path = "../../data/config.json"
+            if os.path.exists(saved_config_path):
+                config_path = saved_config_path
+        
         # 加载配置
         self.config = Config(config_path)
         
@@ -89,14 +96,14 @@ class WarefireSystem:
                     target=app.run,
                     kwargs={
                         'host': '0.0.0.0',
-                        'port': 8080,
+                        'port': 8082,
                         'debug': False,
                         'use_reloader': False
                     },
                     daemon=True
                 )
                 web_thread.start()
-                logger.info("Web Service started successfully on http://0.0.0.0:8080")
+                logger.info("Web Service started successfully on http://0.0.0.0:8082")
             except Exception as e:
                 logger.error(f"Failed to start Web Service: {e}")
         else:

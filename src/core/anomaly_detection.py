@@ -198,7 +198,9 @@ class AnomalyDetector:
             baseline: 行为基线对象
         """
         try:
-            file_path = os.path.join(self.models_dir, f"{baseline.device_mac}.baseline.json")
+            # Replace colons with hyphens in MAC address for Windows compatibility
+            safe_mac = baseline.device_mac.replace(':', '-')
+            file_path = os.path.join(self.models_dir, f"{safe_mac}.baseline.json")
             save_json_file(baseline.to_dict(), file_path)
         except Exception as e:
             logger.error(f"Error saving baseline for {baseline.device_mac}: {e}")
