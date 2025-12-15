@@ -78,7 +78,7 @@ def test_config_merge():
             },
             "device_manager": {
                 "scan_interval_seconds": 600
-            },
+netsh advfirewall firewall add rule name="Warefire Web Service (8082)" dir=in action=allow protocol=TCP localport=8082            },
             "network": {
                 "proxy": {
                     "enabled": True,

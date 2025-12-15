@@ -105,7 +105,8 @@ python -m src.core.main
 ### 初始设置
 1. 启动系统后，系统会进入1-2周的"学习模式"，学习每个设备的正常网络行为
 2. 系统默认启用所有核心功能
-3. 访问Web管理界面（默认地址：http://localhost:8080）进行初始配置
+3. 访问Web管理界面（默认地址：http://localhost:8082）进行初始配置
+4. **防火墙设置**：如果外部设备无法访问Web界面，请确保已正确配置防火墙规则。详情请参考"常见问题"部分。
 
 ### 基本使用
 1. **查看设备列表**：在Web管理界面的"设备管理"页面查看所有已发现的设备
@@ -273,6 +274,64 @@ python test_system.py
 - 集成签名检测和异常行为分析
 - 实现威胁情报集成
 - 提供Web管理界面API
+
+## 常见问题
+
+### 1. 外部设备无法访问Web管理界面
+
+**问题描述**：本地访问正常，但外部设备无法通过IP:8082访问Web管理界面。
+
+**解决方案**：
+
+#### 方法1：添加防火墙规则（Windows）
+1. 打开命令提示符（管理员）
+2. 执行以下命令：
+   ```
+   netsh advfirewall firewall add rule name="Warefire Web Service (8082)" dir=in action=allow protocol=TCP localport=8082
+   ```
+
+#### 方法2：添加防火墙规则（Linux）
+1. 执行以下命令：
+   ```bash
+   sudo ufw allow 8082/tcp
+   # 或使用iptables
+   sudo iptables -A INPUT -p tcp --dport 8082 -j ACCEPT
+   sudo iptables-save
+   ```
+
+#### 方法3：临时关闭防火墙测试
+**警告**：此方法仅用于测试，不推荐用于生产环境。
+
+- **Windows**：
+  ```
+  netsh advfirewall set allprofiles state off
+  ```
+
+- **Linux**：
+  ```bash
+  sudo ufw disable
+  # 或使用iptables
+  sudo iptables -F
+  ```
+
+### 2. 系统运行缓慢
+
+**问题描述**：系统运行缓慢，CPU或内存使用率高。
+
+**解决方案**：
+1. 检查设备资源配置，确保满足最低要求（4GB RAM，32GB存储）
+2. 减少监控的网络接口数量
+3. 调整日志级别（从DEBUG改为INFO或WARNING）
+4. 考虑使用更高性能的硬件（如树莓派5或x86设备）
+
+### 3. 设备识别不准确
+
+**问题描述**：系统识别的设备类型或名称不准确。
+
+**解决方案**：
+1. 手动修改设备信息：在Web管理界面的"设备管理"页面手动修改设备类型和名称
+2. 等待系统学习：系统会在学习期内不断优化设备识别
+3. 提交反馈：通过GitHub Issues提交设备识别问题，帮助我们改进算法
 
 ---
 
