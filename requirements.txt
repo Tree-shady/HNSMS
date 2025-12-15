@@ -1,12 +1,12 @@
 # 家庭网络安全监控系统 - 依赖包列表
 
 # 核心依赖
-python>=3.8
+# Python版本要求：>=3.8（请确保系统已安装相应版本）
 
 # 网络相关
-traffic>=2.0  # 网络流量捕获和分析
-scapy>=2.4.5  # 数据包处理库
-python-nmap>=0.6.1  # 网络扫描库
+# 移除了traffic包，系统使用scapy进行流量捕获和分析
+scapy>=2.4.5  # 数据包处理库，支持arm64
+python-nmap>=0.6.1  # 网络扫描库，支持arm64
 
 # 数据分析与机器学习
 numpy>=1.21.0
@@ -18,7 +18,7 @@ scikit-learn>=0.24.0
 requests>=2.26.0
 
 # 数据库
-sqlite3  # Python标准库，用于本地数据存储
+# sqlite3 是Python标准库，不需要单独安装
 redis>=4.0.0  # 用于缓存
 
 # 工具库

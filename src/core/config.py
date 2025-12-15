@@ -187,23 +187,23 @@ class Config:
             # 性能配置
             "performance": {
                 "threads": {
-                    "traffic_analyzer": 4,
-                    "signature_detection": 2,
-                    "anomaly_detection": 2,
+                    "traffic_analyzer": 2,  # 适配arm64架构，减少线程数
+                    "signature_detection": 1,  # 适配arm64架构，减少线程数
+                    "anomaly_detection": 1,  # 适配arm64架构，减少线程数
                     "threat_intelligence": 1,
                     "device_manager": 1,
-                    "alert_engine": 2
+                    "alert_engine": 1  # 适配arm64架构，减少线程数
                 },
                 "memory": {
-                    "max_usage_mb": 2048,  # 最大内存使用量（MB）
-                    "buffer_size_mb": 100,  # 缓冲区大小（MB）
-                    "cache_size_mb": 500  # 缓存大小（MB）
+                    "max_usage_mb": 1024,  # 适配arm64架构，减少内存使用（MB）
+                    "buffer_size_mb": 50,  # 适配arm64架构，减少缓冲区大小（MB）
+                    "cache_size_mb": 250  # 适配arm64架构，减少缓存大小（MB）
                 },
                 "cpu": {
-                    "max_usage_percent": 80,  # 最大CPU使用率（%）
+                    "max_usage_percent": 70,  # 适配arm64架构，降低最大CPU使用率（%）
                     "affinity": []  # CPU亲和性，空列表表示使用所有CPU
                 },
-                "queue_size": 10000  # 队列大小
+                "queue_size": 5000  # 适配arm64架构，减少队列大小
             },
             
             # 安全配置
