@@ -17,15 +17,21 @@ from .utils import logger, setup_logging
 
 # 导入Web服务模块
 try:
-    # 添加src目录到Python路径，以便能正确导入web模块
+    # 添加项目根目录和src目录到Python路径，以便能正确导入web模块
     import sys
     import os
     src_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    project_root = os.path.dirname(src_path)
+    sys.path.insert(0, project_root)
     sys.path.insert(0, src_path)
     
     from web.backend.app import init_app as init_web_app
+    logger.info("✓ Web服务模块导入成功")
 except ImportError as e:
     logger.warning(f"Failed to import web module: {e}")
+    logger.error(f"导入错误详情: {str(e)}")
+    import traceback
+    logger.error(traceback.format_exc())
     init_web_app = None
 
 class WarefireSystem:
